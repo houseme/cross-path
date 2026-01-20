@@ -1,0 +1,30 @@
+[package]
+name = "cross-path"
+version = "0.0.1"
+edition = "2024"
+authors = ["houseme <housemecn@gmail.com>"]
+description = "Advanced cross-platform path handling library for Windows/Linux path conversion"
+repository = "https://github.com/houseme/cross-path"
+documentation = "https://docs.rs/cross-path"
+license = "MIT OR Apache-2.0"
+keywords = ["path", "cross-platform", "windows", "linux", "conversion"]
+categories = ["filesystem", "api-bindings"]
+readme = "README.md"
+
+[dependencies]
+encoding_rs = { version = "0.8", optional = true }
+libc = "0.2"
+regex = "1.12"
+serde = { version = "1.0", features = ["derive"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_Storage_FileSystem"] }
+
+[features]
+default = ["unicode", "security"]
+unicode = ["dep:encoding_rs"]
+security = []
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

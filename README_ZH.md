@@ -1,10 +1,18 @@
 # CrossPath
 
-高级跨平台路径处理库，完美支持 Windows 和 Linux 路径互转。
+[![Build](https://github.com/houseme/cross-path/workflows/Build/badge.svg)](https://github.com/houseme/cross-path/actions?query=workflow%3ABuild)
+[![crates.io](https://img.shields.io/crates/v/cross-path.svg)](https://crates.io/crates/cross-path)
+[![docs.rs](https://docs.rs/cross-path/badge.svg)](https://docs.rs/cross-path/)
+[![License](https://img.shields.io/crates/l/cross-path)](./LICENSE-APACHE)
+[![Downloads](https://img.shields.io/crates/d/cross-path)](https://crates.io/crates/cross-path)
+
+[English](README.md) | 简体中文
+
+高级跨平台路径处理库，完美支持 Windows 和 Unix 路径互转。
 
 ## 特性
 
-- ✅ Windows ↔ Linux 路径双向转换
+- ✅ Windows ↔ Unix 路径双向转换
 - ✅ UNC 路径支持
 - ✅ 编码自动检测和转换（UTF-8、UTF-16、Windows-1252）
 - ✅ 路径安全性检查（防止路径遍历攻击）
@@ -18,7 +26,7 @@
 
 ```toml
 [dependencies]
-cross_path = "0.1"
+cross_path = "0.0.1"
 ```
 
 ## 快速开始
@@ -94,7 +102,7 @@ let encoding = UnicodeHandler::detect_encoding(bytes);
 println!("检测到的编码：{}", encoding.name());
 
 // 转换到 UTF-8
-let utf8_string = UnicodeHandler::to_utf8(bytes) ?;
+let utf8_string = UnicodeHandler::convert_to_utf8(bytes) ?;
 println!("UTF-8 字符串：{}", utf8_string);
 ```
 

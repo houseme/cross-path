@@ -1,10 +1,18 @@
 # CrossPath
 
-Advanced cross-platform path handling library for perfect Windows and Linux path conversion.
+[![Build](https://github.com/houseme/cross-path/workflows/Build/badge.svg)](https://github.com/houseme/cross-path/actions?query=workflow%3ABuild)
+[![crates.io](https://img.shields.io/crates/v/cross-path.svg)](https://crates.io/crates/cross-path)
+[![docs.rs](https://docs.rs/cross-path/badge.svg)](https://docs.rs/cross-path/)
+[![License](https://img.shields.io/crates/l/cross-path)](./LICENSE-APACHE)
+[![Downloads](https://img.shields.io/crates/d/cross-path)](https://crates.io/crates/cross-path)
+
+English | [简体中文](README_ZH.md)
+
+Advanced cross-platform path handling library for perfect Windows and Unix path conversion.
 
 ## Features
 
-- ✅ Windows ↔ Linux bidirectional path conversion
+- ✅ Windows ↔ Unix bidirectional path conversion
 - ✅ UNC path support
 - ✅ Automatic encoding detection and conversion (UTF-8, UTF-16, Windows-1252)
 - ✅ Path security verification (path traversal prevention)
@@ -18,7 +26,7 @@ Advanced cross-platform path handling library for perfect Windows and Linux path
 
 ```toml
 [dependencies]
-cross_path = "0.1"
+cross_path = "0.0.1"
 ```
 
 ## Quick Start
@@ -94,7 +102,7 @@ let encoding = UnicodeHandler::detect_encoding(bytes);
 println!("Detected encoding: {}", encoding.name());
 
 // Convert to UTF-8
-let utf8_string = UnicodeHandler::to_utf8(bytes) ?;
+let utf8_string = UnicodeHandler::convert_to_utf8(bytes) ?;
 println!("UTF-8 string: {}", utf8_string);
 ```
 

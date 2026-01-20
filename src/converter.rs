@@ -12,6 +12,7 @@ pub struct PathConverter {
 
 impl PathConverter {
     /// Create new path converter
+    #[must_use] 
     pub fn new(config: &PathConfig) -> Self {
         Self {
             config: config.clone(),
@@ -33,8 +34,7 @@ impl PathConverter {
             (PathStyle::Windows, PathStyle::Unix) => self.windows_to_unix(path),
             (PathStyle::Unix, PathStyle::Windows) => self.unix_to_windows(path),
             _ => Err(PathError::UnsupportedFormat(format!(
-                "Unsupported conversion: {:?} -> {:?}",
-                source_style, target_style
+                "Unsupported conversion: {source_style:?} -> {target_style:?}"
             ))),
         }
     }
@@ -193,10 +193,10 @@ impl PathConverter {
             } else {
                 String::new()
             };
-            let unix_path = format!("//{}/{}/{}", server, share, rest);
+            let unix_path = format!("//{server}/{share}/{rest}");
             return Ok(unix_path.trim_end_matches('/').to_string());
         }
 
-        Err(PathError::ParseError(format!("Invalid UNC path: {}", path)))
+        Err(PathError::ParseError(format!("Invalid UNC path: {path}")))
     }
 }

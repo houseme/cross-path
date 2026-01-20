@@ -181,6 +181,7 @@ impl CrossPath {
     }
 
     /// Get original path
+    #[must_use] 
     pub fn as_original(&self) -> &Path {
         &self.inner
     }
@@ -191,6 +192,7 @@ impl CrossPath {
     }
 
     /// Get configuration reference
+    #[must_use] 
     pub fn config(&self) -> &PathConfig {
         &self.config
     }
@@ -239,7 +241,7 @@ impl From<PathBuf> for CrossPath {
 ///
 /// Extension trait to add conversion methods to string and path types
 pub trait PathConvert {
-    /// Convert to CrossPath
+    /// Convert to `CrossPath`
     fn to_cross_path(&self) -> PathResult<CrossPath>;
 
     /// Convert to Windows path

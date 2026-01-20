@@ -22,6 +22,7 @@ impl Default for PathParser {
 
 impl PathParser {
     /// Create new path parser
+    #[must_use] 
     pub fn new() -> Self {
         Self::default()
     }
@@ -81,7 +82,7 @@ impl PathParser {
 
         // Relative path
         let components: Vec<&str> = path
-            .split(|c| c == '/' || c == '\\')
+            .split(['/', '\\'])
             .filter(|s| !s.is_empty())
             .collect();
         parsed.components = components.into_iter().map(String::from).collect();
@@ -98,6 +99,7 @@ impl PathParser {
     }
 
     /// Detect path style
+    #[must_use] 
     pub fn detect_style(path: &str) -> super::PathStyle {
         let parser = Self::new();
 
@@ -128,7 +130,9 @@ impl PathParser {
                     // Ignore current directory
                 }
                 std::path::Component::ParentDir => {
-                    if !components.is_empty() {
+                    if components.is_empty() {
+                        components.push(component);
+                    } else {
                         let last = components.last().unwrap();
                         match last {
                             std::path::Component::ParentDir
@@ -140,8 +144,6 @@ impl PathParser {
                                 components.pop();
                             }
                         }
-                    } else {
-                        components.push(component);
                     }
                 }
                 std::path::Component::Normal(name) => {

@@ -7,6 +7,7 @@ pub struct UnicodeHandler;
 
 impl UnicodeHandler {
     /// Detect string encoding
+    #[must_use] 
     pub fn detect_encoding(bytes: &[u8]) -> &'static encoding_rs::Encoding {
         // Simple UTF-8 detection
         if String::from_utf8(bytes.to_vec()).is_ok() {
@@ -53,6 +54,7 @@ impl UnicodeHandler {
     }
 
     /// Normalize Windows path by removing invalid characters
+    #[must_use] 
     pub fn normalize_windows_path(path: &str) -> String {
         let mut result = path.to_string();
 
@@ -69,6 +71,7 @@ impl UnicodeHandler {
     }
 
     /// Normalize Unix path by removing invalid characters
+    #[must_use] 
     pub fn normalize_unix_path(path: &str) -> String {
         let mut result = path.to_string();
 

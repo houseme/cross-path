@@ -10,6 +10,7 @@ pub struct PathFormatter {
 
 impl PathFormatter {
     /// Create new path formatter
+    #[must_use]
     pub fn new(config: &PathConfig) -> Self {
         Self {
             config: config.clone(),
@@ -38,7 +39,7 @@ impl PathFormatter {
 
         // Add drive letter
         if let Some(drive) = parsed.drive_letter {
-            result.push_str(&format!("{}:", drive));
+            result.push_str(&format!("{drive}:"));
         } else if parsed.is_absolute {
             // Default drive
             result.push_str("C:");
@@ -76,14 +77,14 @@ impl PathFormatter {
         // UNC path handling
         if parsed.is_unc {
             if let (Some(server), Some(share)) = (&parsed.server, &parsed.share) {
-                result.push_str(&format!("//{}/{}", server, share));
+                result.push_str(&format!("//{server}/{share}"));
             }
         } else if parsed.is_absolute {
             if parsed.has_drive {
                 // Map drive letter to Unix mount point
                 if let Some(drive) = parsed.drive_letter {
                     let drive_lower = drive.to_ascii_lowercase();
-                    result.push_str(&self.map_drive_to_unix(&format!("{}:", drive_lower)));
+                    result.push_str(&self.map_drive_to_unix(&format!("{drive_lower}:")));
                 }
             } else {
                 result.push('/');
@@ -160,7 +161,7 @@ impl PathFormatter {
 
         // Default mapping
         let drive_letter = drive.chars().next().unwrap().to_ascii_lowercase();
-        format!("/mnt/{}", drive_letter)
+        format!("/mnt/{drive_letter}")
     }
 
     /// Normalize Windows path string

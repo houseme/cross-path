@@ -16,7 +16,7 @@ pub struct UnixPathExt {
 }
 
 impl UnixPathExt {
-    /// Create new UnixPathExt
+    /// Create new `UnixPathExt`
     pub fn new<P: AsRef<Path>>(path: P) -> Self {
         Self {
             path: path.as_ref().to_path_buf(),
@@ -51,8 +51,7 @@ impl PathExt for UnixPathExt {
             .path
             .file_name()
             .and_then(|n| n.to_str())
-            .map(|s| s.starts_with('.'))
-            .unwrap_or(false);
+            .is_some_and(|s| s.starts_with('.'));
 
         let creation_time = metadata
             .created()
@@ -92,28 +91,30 @@ impl PathExt for UnixPathExt {
 }
 
 /// Check if string is an absolute Unix path
+#[must_use]
 pub fn is_absolute_unix_path(path: &str) -> bool {
     path.starts_with('/')
 }
 
 /// Parse Unix mount point from path
+#[must_use]
 pub fn parse_unix_mount_point(path: &str) -> Option<(&str, &str)> {
-    if let Some(stripped) = path.strip_prefix("/mnt/") {
-        if let Some(pos) = stripped.find('/') {
-            let drive = &stripped[..pos];
-            let rest = &stripped[pos..];
-            return Some((drive, rest));
-        }
+    if let Some(stripped) = path.strip_prefix("/mnt/")
+        && let Some(pos) = stripped.find('/')
+    {
+        let drive = &stripped[..pos];
+        let rest = &stripped[pos..];
+        return Some((drive, rest));
     }
 
-    if let Some(stripped) = path.strip_prefix('/') {
-        if let Some(pos) = stripped.find('/') {
-            let first_component = &stripped[..pos];
-            if first_component.len() == 1
-                && first_component.chars().next().unwrap().is_ascii_lowercase()
-            {
-                return Some((first_component, &stripped[pos..]));
-            }
+    if let Some(stripped) = path.strip_prefix('/')
+        && let Some(pos) = stripped.find('/')
+    {
+        let first_component = &stripped[..pos];
+        if first_component.len() == 1
+            && first_component.chars().next().unwrap().is_ascii_lowercase()
+        {
+            return Some((first_component, &stripped[pos..]));
         }
     }
 
@@ -121,6 +122,12 @@ pub fn parse_unix_mount_point(path: &str) -> Option<(&str, &str)> {
 }
 
 /// Get Unix path statistics
+///
+/// # Arguments
+/// * `path` - Path to retrieve statistics for
+///
+/// # Errors
+/// Returns `PathError` if unable to retrieve metadata
 pub fn get_unix_path_stats(path: &Path) -> Result<PathStats, PathError> {
     let metadata = fs::metadata(path)?;
 
@@ -152,6 +159,7 @@ pub struct PathStats {
 }
 
 /// Check if path is in standard Unix directories
+#[must_use]
 pub fn is_standard_unix_directory(path: &str) -> bool {
     let standard_dirs = vec![
         "/bin", "/boot", "/dev", "/etc", "/home", "/lib", "/lib64", "/media", "/mnt", "/opt",
@@ -169,24 +177,23 @@ pub fn get_filesystem_stats(path: &Path) -> Result<FilesystemStats, PathError> {
     let mut statfs: libc::statvfs = unsafe { std::mem::zeroed() };
 
     unsafe {
-        if libc::statvfs(path_cstr.as_ptr(), &mut statfs) != 0 {
+        if libc::statvfs(path_cstr.as_ptr(), &raw mut statfs) != 0 {
             return Err(PathError::platform_error(format!(
-                "Failed to get filesystem stats for {:?}",
-                path
+                "Failed to get filesystem stats for {path:?}"
             )));
         }
     }
 
     Ok(FilesystemStats {
-        block_size: u64::from(statfs.f_bsize),
+        block_size: statfs.f_bsize,
         total_blocks: u64::from(statfs.f_blocks),
         free_blocks: u64::from(statfs.f_bfree),
         available_blocks: u64::from(statfs.f_bavail),
         total_inodes: u64::from(statfs.f_files),
         free_inodes: u64::from(statfs.f_ffree),
-        filesystem_id: u64::from(statfs.f_fsid),
-        mount_flags: u64::from(statfs.f_flag),
-        max_filename_length: u64::from(statfs.f_namemax),
+        filesystem_id: statfs.f_fsid,
+        mount_flags: statfs.f_flag,
+        max_filename_length: statfs.f_namemax,
     })
 }
 
@@ -229,7 +236,10 @@ mod tests {
 
     #[test]
     fn test_parse_unix_mount_point() {
-        assert_eq!(parse_unix_mount_point("/mnt/c/Users"), Some(("c", "/Users")));
+        assert_eq!(
+            parse_unix_mount_point("/mnt/c/Users"),
+            Some(("c", "/Users"))
+        );
         assert_eq!(parse_unix_mount_point("/c/Users"), Some(("c", "/Users")));
         assert_eq!(parse_unix_mount_point("/home/user"), None);
     }

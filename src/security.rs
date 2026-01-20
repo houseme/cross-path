@@ -32,6 +32,7 @@ impl Default for PathSecurityChecker {
 
 impl PathSecurityChecker {
     /// Create new security checker
+    #[must_use] 
     pub fn new() -> Self {
         Self::default()
     }
@@ -179,6 +180,7 @@ impl PathSecurityChecker {
     }
 
     /// Sanitize path by removing dangerous characters
+    #[must_use] 
     pub fn sanitize_path(path: &str) -> String {
         let mut sanitized = path.to_string();
 

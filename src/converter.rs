@@ -133,6 +133,35 @@ impl PathConverter {
             );
         }
 
+        // Handle /mnt/c/Users style paths on Windows too, if they are passed as input
+        // This logic was previously guarded by #[cfg(not(target_os = "windows"))] but
+        // the test case `test_unix_to_windows_conversion` passes a path like `/mnt/c/Users/...`
+        // even on Windows. We should support parsing this format if possible, or at least
+        // handle it gracefully.
+        // Since `parse_unix_mount_point` is in `platform::unix`, we can't use it directly on Windows.
+        // We can implement a simple fallback parser here or duplicate the logic.
+        // For now, let's implement a simple check for `/mnt/x/` pattern.
+        if let Some(rest_path) = normalized.strip_prefix("/mnt/") {
+            // Skip "/mnt/"
+            if let Some(slash_pos) = rest_path.find('/') {
+                let drive = &rest_path[..slash_pos];
+                if drive.len() == 1 && drive.chars().next().unwrap().is_ascii_alphabetic() {
+                    let rest = &rest_path[slash_pos..];
+                    return format!(
+                        "{}:{}{}",
+                        drive.to_ascii_uppercase(),
+                        rest.replace('/', "\\"),
+                        if rest.is_empty() { "\\" } else { "" }
+                    );
+                }
+            } else if rest_path.len() == 1
+                && rest_path.chars().next().unwrap().is_ascii_alphabetic()
+            {
+                // Path is just "/mnt/c"
+                return format!("{}:\\", rest_path.to_ascii_uppercase());
+            }
+        }
+
         if normalized.starts_with('/') {
             // For absolute paths, map to default drive
             return format!("C:{}", normalized.replace('/', "\\"));

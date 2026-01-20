@@ -35,7 +35,12 @@ impl PathConverter {
         let source_style = self.detect_style(path)?;
 
         if source_style == target_style {
-            return Ok(path.to_string());
+            // Even if styles match, we might want to normalize separators
+            match target_style {
+                PathStyle::Windows => return Ok(self.normalize_windows_path(path)),
+                PathStyle::Unix => return Ok(Self::normalize_unix_path(path)),
+                PathStyle::Auto => return Ok(path.to_string()),
+            }
         }
 
         match (source_style, target_style) {
@@ -114,6 +119,17 @@ impl PathConverter {
         }
 
         // Handle regular Unix paths
+        if normalized.starts_with("/mnt/")
+            && let Some((drive, rest)) = super::platform::unix::parse_unix_mount_point(&normalized)
+            {
+                return format!(
+                    "{}:{}{}",
+                    drive.to_ascii_uppercase(),
+                    rest.replace('/', "\\"),
+                    if rest.is_empty() { "\\" } else { "" }
+                );
+            }
+
         if normalized.starts_with('/') {
             // For absolute paths, map to default drive
             return format!("C:{}", normalized.replace('/', "\\"));

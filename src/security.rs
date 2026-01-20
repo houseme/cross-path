@@ -97,6 +97,7 @@ impl PathSecurityChecker {
     }
 
     /// Check for Windows reserved names
+    #[allow(clippy::unused_self)]
     fn contains_reserved_names(&self, path: &Path) -> bool {
         #[cfg(target_os = "windows")]
         {

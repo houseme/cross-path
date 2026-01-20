@@ -110,6 +110,11 @@ impl PathConverter {
     fn unix_to_windows(&self, path: &str) -> String {
         let normalized = Self::normalize_unix_path(path);
 
+        // Check for UNC paths (Unix style //server/share)
+        if normalized.starts_with("//") {
+            return normalized.replace('/', "\\");
+        }
+
         // Check for mapped drive paths
         // Fix: Tuple is (Windows, Unix), so we must destructure as (windows_drive, unix_prefix)
         for (windows_drive, unix_prefix) in &self.config.drive_mappings {
@@ -172,7 +177,7 @@ impl PathConverter {
         result = result.replace('\\', "/");
 
         // Remove duplicate separators
-        while result.contains("//") {
+        while result.contains("//") && !result.starts_with("//") {
             result = result.replace("//", "/");
         }
 

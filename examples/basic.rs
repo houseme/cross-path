@@ -1,18 +1,24 @@
 use cross_path::{CrossPath, PathConfig, PathConvert, PathStyle};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("=== Basic Path Conversion Examples ===\n");
+
     // Basic path conversion
     let windows_path = r"C:\Users\John\Documents\file.txt";
     let unix_path = "/home/john/documents/file.txt";
 
     // Create cross-platform paths
     let cp1 = CrossPath::new(windows_path)?;
-    println!("Original path: {}", cp1.as_original().display());
-    println!("To Unix: {}", cp1.to_unix()?);
+    println!("1. Windows to Unix:");
+    println!("   Original: {}", cp1.as_original().display());
+    println!("   To Unix:  {}", cp1.to_unix()?);
+    println!();
 
     let cp2 = CrossPath::new(unix_path)?;
-    println!("Original path: {}", cp2.as_original().display());
-    println!("To Windows: {}", cp2.to_windows()?);
+    println!("2. Unix to Windows:");
+    println!("   Original: {}", cp2.as_original().display());
+    println!("   To Windows: {}", cp2.to_windows()?);
+    println!();
 
     // Use custom configuration
     let config = PathConfig {
@@ -27,11 +33,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let cp3 = CrossPath::with_config(windows_path, config)?;
-    println!("Custom mapping: {}", cp3.to_unix()?);
+    println!("3. Custom Configuration (C: -> /mnt/c, D: -> /mnt/data):");
+    println!("   Input: {}", windows_path);
+    println!("   Output: {}", cp3.to_unix()?);
+    println!();
 
-    // Direct string conversion
+    // Direct string conversion trait usage
+    println!("4. Direct Trait Usage:");
     let converted = windows_path.to_unix_path()?;
-    println!("Direct conversion: {}", converted);
+    println!("   \"{}\".to_unix_path() -> {}", windows_path, converted);
 
     Ok(())
 }

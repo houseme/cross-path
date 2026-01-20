@@ -25,6 +25,9 @@ default = ["unicode", "security"]
 unicode = ["dep:encoding_rs"]
 security = []
 
+[dev-dependencies]
+tempfile = { version = "3.24" }
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]

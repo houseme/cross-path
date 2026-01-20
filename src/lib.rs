@@ -5,20 +5,44 @@
 //! - Automatic encoding detection and conversion
 //! - Path security verification
 //! - Cross-platform file operations
+//!
+//! # Examples
+//!
+//! ```rust
+//! use cross_path::{CrossPath, PathStyle};
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! // Convert Windows path to Unix path
+//! let path = CrossPath::new(r"C:\Users\name\file.txt")?;
+//! assert_eq!(path.to_unix()?, "/mnt/c/Users/name/file.txt");
+//!
+//! // Convert Unix path to Windows path
+//! let path = CrossPath::new("/home/name/file.txt")?;
+//! assert_eq!(path.to_windows()?, r"C:\home\name\file.txt");
+//! # Ok(())
+//! # }
+//! ```
 
 #![deny(missing_docs)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 extern crate alloc;
 
+/// Path converter module
 pub mod converter;
+/// Error handling module
 pub mod error;
+/// Path formatter module
 pub mod formatter;
+/// Path parser module
 pub mod parser;
+/// Platform-specific operations module
 pub mod platform;
 #[cfg(feature = "security")]
+/// Security verification module
 pub mod security;
 #[cfg(feature = "unicode")]
+/// Unicode handling module
 pub mod unicode;
 
 pub use converter::PathConverter;
@@ -88,6 +112,14 @@ pub struct CrossPath {
 
 impl CrossPath {
     /// Create a cross-platform path from a string
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path string to parse
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if the path is invalid
     pub fn new<P: AsRef<str>>(path: P) -> PathResult<Self> {
         let path_str = path.as_ref();
         let _ = PathParser::parse(path_str)?;
@@ -101,6 +133,11 @@ impl CrossPath {
     }
 
     /// Create path with custom configuration
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path string to parse
+    /// * `config` - Custom configuration options
     pub fn with_config<P: AsRef<str>>(path: P, config: PathConfig) -> PathResult<Self> {
         let mut cross_path = Self::new(path)?;
         cross_path.config = config;
@@ -108,12 +145,19 @@ impl CrossPath {
     }
 
     /// Convert to path string with specified style
+    ///
+    /// # Arguments
+    ///
+    /// * `style` - The target path style
     pub fn to_style(&self, style: PathStyle) -> PathResult<String> {
         let converter = PathConverter::new(&self.config);
         converter.convert(self.inner.to_string_lossy().as_ref(), style)
     }
 
     /// Convert to platform-appropriate path
+    ///
+    /// Automatically detects the current operating system and converts the path
+    /// to the native format.
     pub fn to_platform(&self) -> PathResult<String> {
         let target_style = match self.config.style {
             PathStyle::Auto => platform::current_style(),
@@ -123,11 +167,15 @@ impl CrossPath {
     }
 
     /// Convert to Windows path
+    ///
+    /// Forces conversion to Windows style (e.g., `C:\path\to\file`)
     pub fn to_windows(&self) -> PathResult<String> {
         self.to_style(PathStyle::Windows)
     }
 
     /// Convert to Unix path
+    ///
+    /// Forces conversion to Unix style (e.g., `/mnt/c/path/to/file`)
     pub fn to_unix(&self) -> PathResult<String> {
         self.to_style(PathStyle::Unix)
     }
@@ -148,11 +196,18 @@ impl CrossPath {
     }
 
     /// Check if path is safe
+    ///
+    /// Performs security checks including:
+    /// - Path traversal detection
+    /// - Dangerous pattern detection
+    /// - System directory access check
     pub fn is_safe(&self) -> PathResult<bool> {
         security::PathSecurityChecker::check_path_security(&self.inner)
     }
 
     /// Normalize path
+    ///
+    /// Removes redundant components like `.` and `..`
     pub fn normalize(&mut self) -> PathResult<()> {
         let normalized = PathParser::normalize_path(&self.inner)?;
         self.inner = normalized;
@@ -181,6 +236,8 @@ impl From<PathBuf> for CrossPath {
 }
 
 /// Path conversion trait
+///
+/// Extension trait to add conversion methods to string and path types
 pub trait PathConvert {
     /// Convert to CrossPath
     fn to_cross_path(&self) -> PathResult<CrossPath>;

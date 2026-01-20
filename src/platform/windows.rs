@@ -1,3 +1,10 @@
+//! Windows-specific path handling implementation
+//!
+//! This module provides Windows-specific implementations for path operations,
+//! including UTF-16 conversion, drive letter handling, and Windows API integration.
+//!
+//! It uses the `windows` crate to interact with the Windows API.
+
 use crate::platform::{DiskInfo, FileAttributes, PathExt, PlatformPath};
 use crate::PathError;
 use alloc::format;
@@ -7,12 +14,27 @@ use core::iter::Iterator;
 use core::option::Option;
 use std::ffi::OsString;
 use std::os::windows::ffi::OsStringExt;
+use std::os::windows::fs::MetadataExt;
+use std::path::{Path, PathBuf};
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::GetLastError;
-use windows::Win32::Storage::FileSystem::GetFileAttributesW;
+use windows::Win32::Storage::FileSystem::{
+    GetDiskFreeSpaceExW, GetFileAttributesW, GetVolumeInformationW, FILE_ATTRIBUTE_HIDDEN,
+};
 
 /// Windows platform path extension
-pub struct WindowsPathExt;
+pub struct WindowsPathExt {
+    path: PathBuf,
+}
+
+impl WindowsPathExt {
+    /// Create new WindowsPathExt
+    pub fn new<P: AsRef<Path>>(path: P) -> Self {
+        Self {
+            path: path.as_ref().to_path_buf(),
+        }
+    }
+}
 
 impl PlatformPath for WindowsPathExt {
     fn separator(&self) -> char {
@@ -20,25 +42,116 @@ impl PlatformPath for WindowsPathExt {
     }
 
     fn is_absolute(&self) -> bool {
-        true // Windows paths can always be determined as absolute
+        self.path.is_absolute()
     }
 
     fn to_platform_specific(&self) -> String {
-        "Windows".to_string()
+        self.path.to_string_lossy().into_owned()
     }
 }
 
 impl PathExt for WindowsPathExt {
     fn get_attributes(&self) -> Option<FileAttributes> {
-        None // Simplified implementation, actual implementation would call Windows API
+        let metadata = std::fs::metadata(&self.path).ok()?;
+
+        let size = metadata.len();
+        let is_directory = metadata.is_dir();
+        let is_readonly = metadata.permissions().readonly();
+
+        // Get hidden attribute using Windows metadata
+        let attrs = metadata.file_attributes();
+        let is_hidden = (attrs & FILE_ATTRIBUTE_HIDDEN.0) != 0;
+
+        let creation_time = metadata
+            .created()
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_secs());
+
+        let modification_time = metadata
+            .modified()
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_secs());
+
+        Some(FileAttributes {
+            size,
+            is_directory,
+            is_hidden,
+            is_readonly,
+            creation_time,
+            modification_time,
+        })
     }
 
     fn is_accessible(&self) -> bool {
-        false // Simplified implementation
+        self.path.exists()
     }
 
     fn get_disk_info(&self) -> Option<DiskInfo> {
-        None // Simplified implementation
+        // Find root path (e.g., "C:\" or "\\Server\Share\")
+        let root = self.path.components().next().and_then(|c| {
+            match c {
+                std::path::Component::Prefix(prefix) => {
+                    let mut s = prefix.as_os_str().to_os_string();
+                    s.push("\\");
+                    Some(s)
+                }
+                std::path::Component::RootDir => {
+                    Some(std::path::PathBuf::from("\\").into_os_string())
+                }
+                _ => None,
+            }
+        })?;
+
+        let root_str = root.to_string_lossy();
+        let wide_root = to_windows_path(&root_str).ok()?;
+
+        let mut total_bytes = 0u64;
+        let mut free_bytes_caller = 0u64;
+        let mut total_free_bytes = 0u64;
+
+        unsafe {
+            let result = GetDiskFreeSpaceExW(
+                PCWSTR(wide_root.as_ptr()),
+                Some(&mut free_bytes_caller),
+                Some(&mut total_bytes),
+                Some(&mut total_free_bytes),
+            );
+
+            if result.is_err() {
+                return None;
+            }
+        }
+
+        // Get Filesystem Name
+        let mut fs_name_buf = [0u16; 256];
+        let fs_type = unsafe {
+            let res = GetVolumeInformationW(
+                PCWSTR(wide_root.as_ptr()),
+                None,
+                None,
+                None,
+                None,
+                Some(&mut fs_name_buf),
+            );
+
+            if res.is_ok() {
+                let len = fs_name_buf
+                    .iter()
+                    .position(|&c| c == 0)
+                    .unwrap_or(fs_name_buf.len());
+                String::from_utf16_lossy(&fs_name_buf[..len])
+            } else {
+                "Unknown".to_string()
+            }
+        };
+
+        Some(DiskInfo {
+            total_space: total_bytes,
+            free_space: free_bytes_caller,
+            filesystem_type: fs_type,
+        })
     }
 }
 
@@ -131,4 +244,50 @@ pub fn get_windows_file_attributes(path: &str) -> Result<u32, PathError> {
 pub fn windows_path_exists(path: &str) -> Result<bool, PathError> {
     let attrs = get_windows_file_attributes(path)?;
     Ok(attrs != 0xFFFFFFFF)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_valid_windows_path() {
+        assert!(is_valid_windows_path(r"C:\Windows"));
+        assert!(is_valid_windows_path(r"D:\Data\file.txt"));
+        assert!(is_valid_windows_path(r"\\Server\Share"));
+        assert!(!is_valid_windows_path(r"/usr/bin"));
+        assert!(!is_valid_windows_path(r"relative\path"));
+    }
+
+    #[test]
+    fn test_get_drive_letter() {
+        assert_eq!(get_drive_letter(r"C:\Windows"), Some('C'));
+        assert_eq!(get_drive_letter(r"d:\data"), Some('D'));
+        assert_eq!(get_drive_letter(r"\\Server\Share"), None);
+        assert_eq!(get_drive_letter(r"/usr/bin"), None);
+    }
+
+    #[test]
+    fn test_to_windows_path() {
+        let path = "C:/Windows/System32";
+        let wide = to_windows_path(path).unwrap();
+
+        // Check null terminator
+        assert_eq!(*wide.last().unwrap(), 0);
+
+        // Check separator conversion
+        let backslash = b'\\' as u16;
+        assert!(wide.contains(&backslash));
+    }
+
+    #[test]
+    fn test_from_windows_path() {
+        let wide = vec![
+            'C' as u16, ':' as u16, '\\' as u16, 'T' as u16, 'e' as u16, 's' as u16, 't' as u16, 0
+        ];
+        let path = from_windows_path(&wide).unwrap();
+
+        // Should be normalized to forward slashes by default in this lib
+        assert_eq!(path, "C:/Test");
+    }
 }

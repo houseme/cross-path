@@ -1,7 +1,15 @@
+//! Platform-specific path handling operations
+//!
+//! This module provides traits and structures for handling platform-specific
+//! path operations, file attributes, and disk information.
+//!
+//! It abstracts away the differences between Windows and Unix-like systems,
+//! allowing for uniform access to filesystem metadata.
+
 #[cfg(not(target_os = "windows"))]
-mod unix;
+pub mod unix;
 #[cfg(target_os = "windows")]
-mod windows;
+pub mod windows;
 
 use alloc::string::String;
 use core::option::Option;
@@ -52,18 +60,27 @@ pub trait PathExt: PlatformPath {
 /// File attributes structure
 #[derive(Debug, Clone)]
 pub struct FileAttributes {
+    /// File size in bytes
     pub size: u64,
+    /// Whether the file is a directory
     pub is_directory: bool,
+    /// Whether the file is hidden
     pub is_hidden: bool,
+    /// Whether the file is read-only
     pub is_readonly: bool,
+    /// Creation timestamp (if available)
     pub creation_time: Option<u64>,
+    /// Last modification timestamp (if available)
     pub modification_time: Option<u64>,
 }
 
 /// Disk information structure
 #[derive(Debug, Clone)]
 pub struct DiskInfo {
+    /// Total disk space in bytes
     pub total_space: u64,
+    /// Free disk space in bytes
     pub free_space: u64,
+    /// Filesystem type name (e.g., "NTFS", "ext4")
     pub filesystem_type: String,
 }

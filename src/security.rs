@@ -7,6 +7,7 @@ use std::path::Path;
 pub struct PathSecurityChecker {
     path_traversal_regex: Regex,
     dangerous_patterns: Vec<Regex>,
+    #[allow(dead_code)] // Reserved names are only used on Windows
     reserved_names: Vec<&'static str>,
 }
 

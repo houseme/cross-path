@@ -21,7 +21,7 @@ pub use windows::WindowsPathExt;
 use super::PathStyle;
 
 /// Get current platform path style
-#[must_use] 
+#[must_use]
 pub fn current_style() -> PathStyle {
     #[cfg(target_os = "windows")]
     {

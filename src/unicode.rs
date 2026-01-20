@@ -1,5 +1,5 @@
 use crate::{PathError, PathResult};
-use encoding_rs::{UTF_16LE, UTF_8, WINDOWS_1252};
+use encoding_rs::{UTF_8, UTF_16LE, WINDOWS_1252};
 
 /// Unicode encoding handler for path strings
 #[derive(Debug, Clone, Copy)]

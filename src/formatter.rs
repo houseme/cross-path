@@ -25,8 +25,8 @@ impl PathFormatter {
     /// Returns `PathError` if formatting fails (e.g., invalid components).
     pub fn format(&self, parsed: &ParsedPath, target_style: PathStyle) -> PathResult<String> {
         match target_style {
-            PathStyle::Windows => self.format_windows(parsed),
-            PathStyle::Unix => self.format_unix(parsed),
+            PathStyle::Windows => Ok(self.format_windows(parsed)),
+            PathStyle::Unix => Ok(self.format_unix(parsed)),
             PathStyle::Auto => {
                 let current_style = super::platform::current_style();
                 self.format(parsed, current_style)
@@ -35,9 +35,9 @@ impl PathFormatter {
     }
 
     /// Format as Windows path
-    fn format_windows(&self, parsed: &ParsedPath) -> PathResult<String> {
+    fn format_windows(&self, parsed: &ParsedPath) -> String {
         if parsed.is_unc {
-            return Ok(Self::format_unc_windows(parsed));
+            return Self::format_unc_windows(parsed);
         }
 
         let mut result = String::new();
@@ -68,13 +68,13 @@ impl PathFormatter {
             result = Self::normalize_windows_path(&result);
         }
 
-        Ok(result)
+        result
     }
 
     /// Format as Unix path
-    fn format_unix(&self, parsed: &ParsedPath) -> PathResult<String> {
+    fn format_unix(&self, parsed: &ParsedPath) -> String {
         if parsed.is_unc {
-            return Ok(Self::format_unc_unix(parsed));
+            return Self::format_unc_unix(parsed);
         }
 
         let mut result = String::new();
@@ -109,7 +109,7 @@ impl PathFormatter {
             result = Self::normalize_unix_path(&result);
         }
 
-        Ok(result)
+        result
     }
 
     /// Format UNC path as Windows format

@@ -73,7 +73,7 @@ impl PathSecurityChecker {
         }
 
         // Check for system directory access attempts
-        if self.accesses_system_directories(path) {
+        if Self::accesses_system_directories(path) {
             return Err(PathError::security_error(
                 "Attempt to access system directories",
             ));
@@ -121,7 +121,7 @@ impl PathSecurityChecker {
     }
 
     /// Check if path attempts to access system directories
-    fn accesses_system_directories(&self, path: &Path) -> bool {
+    fn accesses_system_directories(path: &Path) -> bool {
         let path_str = path.to_string_lossy();
 
         #[cfg(target_os = "windows")]
@@ -158,14 +158,7 @@ impl PathSecurityChecker {
             #[cfg(target_os = "android")]
             let system_dirs = {
                 let mut dirs = system_dirs;
-                dirs.extend_from_slice(&[
-                    "/system",
-                    "/data",
-                    "/cache",
-                    "/vendor",
-                    "/oem",
-                    "/odm",
-                ]);
+                dirs.extend_from_slice(&["/system", "/data", "/cache", "/vendor", "/oem", "/odm"]);
                 dirs
             };
 
@@ -174,11 +167,7 @@ impl PathSecurityChecker {
             let system_dirs = {
                 let mut dirs = system_dirs;
                 dirs.extend_from_slice(&[
-                    "/System",
-                    "/Library",
-                    "/private",
-                    "/Volumes",
-                    "/Network",
+                    "/System", "/Library", "/private", "/Volumes", "/Network",
                 ]);
                 dirs
             };

@@ -1,4 +1,4 @@
-use cross_path::{security, unicode, CrossPath};
+use cross_path::{CrossPath, security, unicode};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Advanced usage: encoding and security handling

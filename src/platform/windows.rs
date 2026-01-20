@@ -5,8 +5,8 @@
 //!
 //! It uses the `windows` crate to interact with the Windows API.
 
-use crate::platform::{DiskInfo, FileAttributes, PathExt, PlatformPath};
 use crate::PathError;
+use crate::platform::{DiskInfo, FileAttributes, PathExt, PlatformPath};
 use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
@@ -16,11 +16,11 @@ use std::ffi::OsString;
 use std::os::windows::ffi::OsStringExt;
 use std::os::windows::fs::MetadataExt;
 use std::path::{Path, PathBuf};
-use windows::core::PCWSTR;
 use windows::Win32::Foundation::GetLastError;
 use windows::Win32::Storage::FileSystem::{
-    GetDiskFreeSpaceExW, GetFileAttributesW, GetVolumeInformationW, FILE_ATTRIBUTE_HIDDEN,
+    FILE_ATTRIBUTE_HIDDEN, GetDiskFreeSpaceExW, GetFileAttributesW, GetVolumeInformationW,
 };
+use windows::core::PCWSTR;
 
 /// Windows platform path extension
 pub struct WindowsPathExt {
@@ -90,18 +90,14 @@ impl PathExt for WindowsPathExt {
 
     fn get_disk_info(&self) -> Option<DiskInfo> {
         // Find root path (e.g., "C:\" or "\\Server\Share\")
-        let root = self.path.components().next().and_then(|c| {
-            match c {
-                std::path::Component::Prefix(prefix) => {
-                    let mut s = prefix.as_os_str().to_os_string();
-                    s.push("\\");
-                    Some(s)
-                }
-                std::path::Component::RootDir => {
-                    Some(std::path::PathBuf::from("\\").into_os_string())
-                }
-                _ => None,
+        let root = self.path.components().next().and_then(|c| match c {
+            std::path::Component::Prefix(prefix) => {
+                let mut s = prefix.as_os_str().to_os_string();
+                s.push("\\");
+                Some(s)
             }
+            std::path::Component::RootDir => Some(std::path::PathBuf::from("\\").into_os_string()),
+            _ => None,
         })?;
 
         let root_str = root.to_string_lossy();
@@ -283,7 +279,14 @@ mod tests {
     #[test]
     fn test_from_windows_path() {
         let wide = vec![
-            'C' as u16, ':' as u16, '\\' as u16, 'T' as u16, 'e' as u16, 's' as u16, 't' as u16, 0
+            'C' as u16,
+            ':' as u16,
+            '\\' as u16,
+            'T' as u16,
+            'e' as u16,
+            's' as u16,
+            't' as u16,
+            0,
         ];
         let path = from_windows_path(&wide).unwrap();
 

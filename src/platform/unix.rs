@@ -5,8 +5,8 @@
 //!
 //! It uses POSIX standard APIs (via `libc`) to interact with the underlying system.
 
-use crate::platform::{DiskInfo, FileAttributes, PathExt, PlatformPath};
 use crate::PathError;
+use crate::platform::{DiskInfo, FileAttributes, PathExt, PlatformPath};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -97,6 +97,10 @@ pub fn is_absolute_unix_path(path: &str) -> bool {
 }
 
 /// Parse Unix mount point from path
+///
+/// # Panics
+///
+/// Panics if the path contains invalid characters or structure that cannot be parsed.
 #[must_use]
 pub fn parse_unix_mount_point(path: &str) -> Option<(&str, &str)> {
     if let Some(stripped) = path.strip_prefix("/mnt/")
@@ -170,6 +174,10 @@ pub fn is_standard_unix_directory(path: &str) -> bool {
 }
 
 /// Get filesystem statistics for Unix path
+///
+/// # Errors
+///
+/// Returns `PathError` if the filesystem statistics cannot be retrieved.
 pub fn get_filesystem_stats(path: &Path) -> Result<FilesystemStats, PathError> {
     let path_cstr = std::ffi::CString::new(path.to_string_lossy().as_ref())
         .map_err(|e| PathError::platform_error(e.to_string()))?;
@@ -179,21 +187,22 @@ pub fn get_filesystem_stats(path: &Path) -> Result<FilesystemStats, PathError> {
     unsafe {
         if libc::statvfs(path_cstr.as_ptr(), &raw mut statfs) != 0 {
             return Err(PathError::platform_error(format!(
-                "Failed to get filesystem stats for {path:?}"
+                "Failed to get filesystem stats for {}",
+                path.display()
             )));
         }
     }
 
     Ok(FilesystemStats {
-        block_size: statfs.f_bsize,
+        block_size: statfs.f_bsize as u64,
         total_blocks: u64::from(statfs.f_blocks),
         free_blocks: u64::from(statfs.f_bfree),
         available_blocks: u64::from(statfs.f_bavail),
         total_inodes: u64::from(statfs.f_files),
         free_inodes: u64::from(statfs.f_ffree),
-        filesystem_id: statfs.f_fsid,
-        mount_flags: statfs.f_flag,
-        max_filename_length: statfs.f_namemax,
+        filesystem_id: statfs.f_fsid as u64,
+        mount_flags: statfs.f_flag as u64,
+        max_filename_length: statfs.f_namemax as u64,
     })
 }
 

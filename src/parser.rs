@@ -85,10 +85,7 @@ impl PathParser {
         }
 
         // Relative path
-        let components: Vec<&str> = path
-            .split(['/', '\\'])
-            .filter(|s| !s.is_empty())
-            .collect();
+        let components: Vec<&str> = path.split(['/', '\\']).filter(|s| !s.is_empty()).collect();
         parsed.components = components.into_iter().map(String::from).collect();
 
         parsed

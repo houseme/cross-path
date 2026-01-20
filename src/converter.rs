@@ -40,7 +40,7 @@ impl PathConverter {
 
         match (source_style, target_style) {
             (PathStyle::Windows, PathStyle::Unix) => self.windows_to_unix(path),
-            (PathStyle::Unix, PathStyle::Windows) => self.unix_to_windows(path),
+            (PathStyle::Unix, PathStyle::Windows) => Ok(self.unix_to_windows(path)),
             _ => Err(PathError::UnsupportedFormat(format!(
                 "Unsupported conversion: {source_style:?} -> {target_style:?}"
             ))),
@@ -87,7 +87,7 @@ impl PathConverter {
 
         // Handle UNC paths
         if normalized.starts_with(r"\\") {
-            return self.convert_unc_path(&normalized);
+            return Self::convert_unc_path(&normalized);
         }
 
         // Handle drive letter paths
@@ -102,28 +102,25 @@ impl PathConverter {
     }
 
     /// Convert Unix path to Windows
-    fn unix_to_windows(&self, path: &str) -> PathResult<String> {
-        let normalized = self.normalize_unix_path(path);
+    fn unix_to_windows(&self, path: &str) -> String {
+        let normalized = Self::normalize_unix_path(path);
 
         // Check for mapped drive paths
         for (unix_prefix, windows_drive) in &self.config.drive_mappings {
             if normalized.starts_with(unix_prefix) {
                 let rest = &normalized[unix_prefix.len()..];
-                let windows_path = format!("{}{}", windows_drive, rest.replace('/', "\\"));
-                return Ok(windows_path);
+                return format!("{}{}", windows_drive, rest.replace('/', "\\"));
             }
         }
 
         // Handle regular Unix paths
         if normalized.starts_with('/') {
             // For absolute paths, map to default drive
-            let windows_path = format!("C:{}", normalized.replace('/', "\\"));
-            return Ok(windows_path);
+            return format!("C:{}", normalized.replace('/', "\\"));
         }
 
         // Relative paths
-        let windows_path = normalized.replace('/', "\\");
-        Ok(windows_path)
+        normalized.replace('/', "\\")
     }
 
     /// Normalize Windows path
@@ -148,7 +145,7 @@ impl PathConverter {
     }
 
     /// Normalize Unix path
-    fn normalize_unix_path(&self, path: &str) -> String {
+    fn normalize_unix_path(path: &str) -> String {
         let mut result = path.to_string();
 
         // Unify separators
@@ -194,7 +191,7 @@ impl PathConverter {
     }
 
     /// Convert UNC path
-    fn convert_unc_path(&self, path: &str) -> PathResult<String> {
+    fn convert_unc_path(path: &str) -> PathResult<String> {
         // UNC path format: \\server\share\path
         let parts: Vec<&str> = path.split('\\').collect();
         if parts.len() >= 4 {

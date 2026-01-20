@@ -121,14 +121,14 @@ impl PathConverter {
         // Handle regular Unix paths
         if normalized.starts_with("/mnt/")
             && let Some((drive, rest)) = super::platform::unix::parse_unix_mount_point(&normalized)
-            {
-                return format!(
-                    "{}:{}{}",
-                    drive.to_ascii_uppercase(),
-                    rest.replace('/', "\\"),
-                    if rest.is_empty() { "\\" } else { "" }
-                );
-            }
+        {
+            return format!(
+                "{}:{}{}",
+                drive.to_ascii_uppercase(),
+                rest.replace('/', "\\"),
+                if rest.is_empty() { "\\" } else { "" }
+            );
+        }
 
         if normalized.starts_with('/') {
             // For absolute paths, map to default drive

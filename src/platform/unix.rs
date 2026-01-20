@@ -195,11 +195,11 @@ pub fn get_filesystem_stats(path: &Path) -> Result<FilesystemStats, PathError> {
 
     Ok(FilesystemStats {
         block_size: statfs.f_bsize as u64,
-        total_blocks: u64::from(statfs.f_blocks),
-        free_blocks: u64::from(statfs.f_bfree),
-        available_blocks: u64::from(statfs.f_bavail),
-        total_inodes: u64::from(statfs.f_files),
-        free_inodes: u64::from(statfs.f_ffree),
+        total_blocks: statfs.f_blocks as u64,
+        free_blocks: statfs.f_bfree as u64,
+        available_blocks: statfs.f_bavail as u64,
+        total_inodes: statfs.f_files as u64,
+        free_inodes: statfs.f_ffree as u64,
         filesystem_id: statfs.f_fsid as u64,
         mount_flags: statfs.f_flag as u64,
         max_filename_length: statfs.f_namemax as u64,

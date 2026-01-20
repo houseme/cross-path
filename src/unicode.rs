@@ -7,7 +7,7 @@ pub struct UnicodeHandler;
 
 impl UnicodeHandler {
     /// Detect string encoding
-    #[must_use] 
+    #[must_use]
     pub fn detect_encoding(bytes: &[u8]) -> &'static encoding_rs::Encoding {
         // Simple UTF-8 detection
         if String::from_utf8(bytes.to_vec()).is_ok() {
@@ -24,6 +24,10 @@ impl UnicodeHandler {
     }
 
     /// Convert bytes to UTF-8 string
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if encoding conversion fails.
     pub fn convert_to_utf8(bytes: &[u8]) -> PathResult<String> {
         let encoding = Self::detect_encoding(bytes);
         let (decoded, _, had_errors) = encoding.decode(bytes);
@@ -38,6 +42,10 @@ impl UnicodeHandler {
     }
 
     /// Convert UTF-8 string to target encoding bytes
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if encoding conversion fails.
     pub fn convert_from_utf8(
         text: &str,
         target_encoding: &'static encoding_rs::Encoding,
@@ -54,7 +62,7 @@ impl UnicodeHandler {
     }
 
     /// Normalize Windows path by removing invalid characters
-    #[must_use] 
+    #[must_use]
     pub fn normalize_windows_path(path: &str) -> String {
         let mut result = path.to_string();
 
@@ -71,7 +79,7 @@ impl UnicodeHandler {
     }
 
     /// Normalize Unix path by removing invalid characters
-    #[must_use] 
+    #[must_use]
     pub fn normalize_unix_path(path: &str) -> String {
         let mut result = path.to_string();
 
@@ -85,6 +93,10 @@ impl UnicodeHandler {
     }
 
     /// Convert path encoding (mainly for Windows non-UTF-8 encodings)
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if encoding conversion fails.
     pub fn convert_path_encoding(
         path: &str,
         from: &'static encoding_rs::Encoding,

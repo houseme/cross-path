@@ -12,7 +12,11 @@ pub struct PathConverter {
 
 impl PathConverter {
     /// Create new path converter
-    #[must_use] 
+    ///
+    /// # Panics
+    ///
+    /// Panics if the internal regex patterns are invalid.
+    #[must_use]
     pub fn new(config: &PathConfig) -> Self {
         Self {
             config: config.clone(),
@@ -23,6 +27,10 @@ impl PathConverter {
     }
 
     /// Convert path to specified style
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if the path cannot be converted or the format is unsupported.
     pub fn convert(&self, path: &str, target_style: PathStyle) -> PathResult<String> {
         let source_style = self.detect_style(path)?;
 
@@ -40,6 +48,10 @@ impl PathConverter {
     }
 
     /// Detect path style
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if detection fails (though currently it always succeeds or returns default).
     pub fn detect_style(&self, path: &str) -> PathResult<PathStyle> {
         // Check for Windows path
         if self.windows_path_regex.is_match(path) {
@@ -71,7 +83,7 @@ impl PathConverter {
 
     /// Convert Windows path to Unix
     fn windows_to_unix(&self, path: &str) -> PathResult<String> {
-        let normalized = self.normalize_windows_path(path)?;
+        let normalized = self.normalize_windows_path(path);
 
         // Handle UNC paths
         if normalized.starts_with(r"\\") {
@@ -91,7 +103,7 @@ impl PathConverter {
 
     /// Convert Unix path to Windows
     fn unix_to_windows(&self, path: &str) -> PathResult<String> {
-        let normalized = self.normalize_unix_path(path)?;
+        let normalized = self.normalize_unix_path(path);
 
         // Check for mapped drive paths
         for (unix_prefix, windows_drive) in &self.config.drive_mappings {
@@ -115,7 +127,7 @@ impl PathConverter {
     }
 
     /// Normalize Windows path
-    fn normalize_windows_path(&self, path: &str) -> PathResult<String> {
+    fn normalize_windows_path(&self, path: &str) -> String {
         let mut result = path.to_string();
 
         // Unify separators
@@ -132,11 +144,11 @@ impl PathConverter {
             result.pop();
         }
 
-        Ok(result)
+        result
     }
 
     /// Normalize Unix path
-    fn normalize_unix_path(&self, path: &str) -> PathResult<String> {
+    fn normalize_unix_path(&self, path: &str) -> String {
         let mut result = path.to_string();
 
         // Unify separators
@@ -152,7 +164,7 @@ impl PathConverter {
             result.pop();
         }
 
-        Ok(result)
+        result
     }
 
     /// Split drive letter from path

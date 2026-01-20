@@ -1,6 +1,7 @@
 use crate::parser::ParsedPath;
 use crate::{PathConfig, PathResult, PathStyle};
 use std::fmt;
+use std::fmt::Write;
 
 /// Path formatter for generating styled path strings
 #[derive(Debug, Clone)]
@@ -18,6 +19,10 @@ impl PathFormatter {
     }
 
     /// Format parsed path with specified style
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if formatting fails (e.g., invalid components).
     pub fn format(&self, parsed: &ParsedPath, target_style: PathStyle) -> PathResult<String> {
         match target_style {
             PathStyle::Windows => self.format_windows(parsed),
@@ -32,14 +37,14 @@ impl PathFormatter {
     /// Format as Windows path
     fn format_windows(&self, parsed: &ParsedPath) -> PathResult<String> {
         if parsed.is_unc {
-            return self.format_unc_windows(parsed);
+            return Ok(Self::format_unc_windows(parsed));
         }
 
         let mut result = String::new();
 
         // Add drive letter
         if let Some(drive) = parsed.drive_letter {
-            result.push_str(&format!("{drive}:"));
+            let _ = write!(result, "{drive}:");
         } else if parsed.is_absolute {
             // Default drive
             result.push_str("C:");
@@ -60,7 +65,7 @@ impl PathFormatter {
 
         // Normalize if requested
         if self.config.normalize {
-            result = self.normalize_windows_path(&result);
+            result = Self::normalize_windows_path(&result);
         }
 
         Ok(result)
@@ -69,7 +74,7 @@ impl PathFormatter {
     /// Format as Unix path
     fn format_unix(&self, parsed: &ParsedPath) -> PathResult<String> {
         if parsed.is_unc {
-            return self.format_unc_unix(parsed);
+            return Ok(Self::format_unc_unix(parsed));
         }
 
         let mut result = String::new();
@@ -77,7 +82,7 @@ impl PathFormatter {
         // UNC path handling
         if parsed.is_unc {
             if let (Some(server), Some(share)) = (&parsed.server, &parsed.share) {
-                result.push_str(&format!("//{server}/{share}"));
+                let _ = write!(result, "//{server}/{share}");
             }
         } else if parsed.is_absolute {
             if parsed.has_drive {
@@ -101,14 +106,14 @@ impl PathFormatter {
 
         // Normalize if requested
         if self.config.normalize {
-            result = self.normalize_unix_path(&result);
+            result = Self::normalize_unix_path(&result);
         }
 
         Ok(result)
     }
 
     /// Format UNC path as Windows format
-    fn format_unc_windows(&self, parsed: &ParsedPath) -> PathResult<String> {
+    fn format_unc_windows(parsed: &ParsedPath) -> String {
         let mut result = String::from(r"\\");
 
         if let Some(server) = &parsed.server {
@@ -126,11 +131,11 @@ impl PathFormatter {
             result.push_str(component);
         }
 
-        Ok(result)
+        result
     }
 
     /// Format UNC path as Unix format
-    fn format_unc_unix(&self, parsed: &ParsedPath) -> PathResult<String> {
+    fn format_unc_unix(parsed: &ParsedPath) -> String {
         let mut result = String::from("//");
 
         if let Some(server) = &parsed.server {
@@ -148,7 +153,7 @@ impl PathFormatter {
             result.push_str(component);
         }
 
-        Ok(result)
+        result
     }
 
     /// Map Windows drive letter to Unix path
@@ -165,7 +170,7 @@ impl PathFormatter {
     }
 
     /// Normalize Windows path string
-    fn normalize_windows_path(&self, path: &str) -> String {
+    fn normalize_windows_path(path: &str) -> String {
         let mut result = path.to_string();
 
         // Unify separators
@@ -185,7 +190,7 @@ impl PathFormatter {
     }
 
     /// Normalize Unix path string
-    fn normalize_unix_path(&self, path: &str) -> String {
+    fn normalize_unix_path(path: &str) -> String {
         let mut result = path.to_string();
 
         // Unify separators

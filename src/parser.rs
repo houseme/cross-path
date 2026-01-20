@@ -5,35 +5,39 @@ use std::path::{Path, PathBuf};
 /// Path parser for analyzing path structure
 #[derive(Debug, Clone)]
 pub struct PathParser {
-    windows_absolute_regex: Regex,
-    unix_absolute_regex: Regex,
-    unc_path_regex: Regex,
+    windows_absolute: Regex,
+    unix_absolute: Regex,
+    unc_path: Regex,
 }
 
 impl Default for PathParser {
     fn default() -> Self {
         Self {
-            windows_absolute_regex: Regex::new(r"^[a-zA-Z]:[/\\].*$").unwrap(),
-            unix_absolute_regex: Regex::new(r"^/.*$").unwrap(),
-            unc_path_regex: Regex::new(r"^\\\\[^\\]+\\[^\\]+").unwrap(),
+            windows_absolute: Regex::new(r"^[a-zA-Z]:[/\\].*$").unwrap(),
+            unix_absolute: Regex::new(r"^/.*$").unwrap(),
+            unc_path: Regex::new(r"^\\\\[^\\]+\\[^\\]+").unwrap(),
         }
     }
 }
 
 impl PathParser {
     /// Create new path parser
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Parse path into structured components
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if parsing fails (though currently it always succeeds).
     pub fn parse(path: &str) -> PathResult<ParsedPath> {
         let parser = Self::new();
-        parser.parse_internal(path)
+        Ok(parser.parse_internal(path))
     }
 
-    fn parse_internal(&self, path: &str) -> PathResult<ParsedPath> {
+    fn parse_internal(&self, path: &str) -> ParsedPath {
         let mut parsed = ParsedPath {
             original: path.to_string(),
             components: Vec::new(),
@@ -46,18 +50,18 @@ impl PathParser {
         };
 
         // Detect UNC path
-        if self.unc_path_regex.is_match(path) {
+        if self.unc_path.is_match(path) {
             parsed.is_unc = true;
-            if let Some((server, share)) = self.parse_unc_path(path) {
+            if let Some((server, share)) = Self::parse_unc_path(path) {
                 parsed.server = Some(server);
                 parsed.share = Some(share);
             }
             parsed.is_absolute = true;
-            return Ok(parsed);
+            return parsed;
         }
 
         // Detect Windows absolute path
-        if self.windows_absolute_regex.is_match(path) {
+        if self.windows_absolute.is_match(path) {
             parsed.is_absolute = true;
             parsed.has_drive = true;
             parsed.drive_letter = Some(path.chars().next().unwrap().to_ascii_uppercase());
@@ -67,17 +71,17 @@ impl PathParser {
             let components: Vec<&str> = normalized.split('/').filter(|s| !s.is_empty()).collect();
             parsed.components = components.into_iter().map(String::from).collect();
 
-            return Ok(parsed);
+            return parsed;
         }
 
         // Detect Unix absolute path
-        if self.unix_absolute_regex.is_match(path) {
+        if self.unix_absolute.is_match(path) {
             parsed.is_absolute = true;
 
             let components: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
             parsed.components = components.into_iter().map(String::from).collect();
 
-            return Ok(parsed);
+            return parsed;
         }
 
         // Relative path
@@ -87,10 +91,10 @@ impl PathParser {
             .collect();
         parsed.components = components.into_iter().map(String::from).collect();
 
-        Ok(parsed)
+        parsed
     }
 
-    fn parse_unc_path(&self, path: &str) -> Option<(String, String)> {
+    fn parse_unc_path(path: &str) -> Option<(String, String)> {
         let parts: Vec<&str> = path.split('\\').filter(|s| !s.is_empty()).collect();
         if parts.len() >= 2 {
             return Some((parts[0].to_string(), parts[1].to_string()));
@@ -99,13 +103,13 @@ impl PathParser {
     }
 
     /// Detect path style
-    #[must_use] 
+    #[must_use]
     pub fn detect_style(path: &str) -> super::PathStyle {
         let parser = Self::new();
 
-        if parser.unc_path_regex.is_match(path) || parser.windows_absolute_regex.is_match(path) {
+        if parser.unc_path.is_match(path) || parser.windows_absolute.is_match(path) {
             super::PathStyle::Windows
-        } else if parser.unix_absolute_regex.is_match(path) {
+        } else if parser.unix_absolute.is_match(path) {
             super::PathStyle::Unix
         } else if path.contains('\\') && !path.contains('/') {
             super::PathStyle::Windows
@@ -117,6 +121,14 @@ impl PathParser {
     }
 
     /// Normalize path by removing redundant components
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if the path is invalid.
+    ///
+    /// # Panics
+    ///
+    /// Panics if path components are invalid or inconsistent.
     pub fn normalize_path(path: &Path) -> PathResult<PathBuf> {
         let mut components = Vec::new();
 

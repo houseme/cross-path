@@ -138,6 +138,10 @@ impl CrossPath {
     ///
     /// * `path` - The path string to parse
     /// * `config` - Custom configuration options
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if the path is invalid
     pub fn with_config<P: AsRef<str>>(path: P, config: PathConfig) -> PathResult<Self> {
         let mut cross_path = Self::new(path)?;
         cross_path.config = config;
@@ -149,6 +153,10 @@ impl CrossPath {
     /// # Arguments
     ///
     /// * `style` - The target path style
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if conversion fails
     pub fn to_style(&self, style: PathStyle) -> PathResult<String> {
         let converter = PathConverter::new(&self.config);
         converter.convert(self.inner.to_string_lossy().as_ref(), style)
@@ -158,6 +166,10 @@ impl CrossPath {
     ///
     /// Automatically detects the current operating system and converts the path
     /// to the native format.
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if conversion fails
     pub fn to_platform(&self) -> PathResult<String> {
         let target_style = match self.config.style {
             PathStyle::Auto => platform::current_style(),
@@ -169,6 +181,10 @@ impl CrossPath {
     /// Convert to Windows path
     ///
     /// Forces conversion to Windows style (e.g., `C:\path\to\file`)
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if conversion fails
     pub fn to_windows(&self) -> PathResult<String> {
         self.to_style(PathStyle::Windows)
     }
@@ -176,12 +192,16 @@ impl CrossPath {
     /// Convert to Unix path
     ///
     /// Forces conversion to Unix style (e.g., `/mnt/c/path/to/file`)
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if conversion fails
     pub fn to_unix(&self) -> PathResult<String> {
         self.to_style(PathStyle::Unix)
     }
 
     /// Get original path
-    #[must_use] 
+    #[must_use]
     pub fn as_original(&self) -> &Path {
         &self.inner
     }
@@ -192,7 +212,7 @@ impl CrossPath {
     }
 
     /// Get configuration reference
-    #[must_use] 
+    #[must_use]
     pub fn config(&self) -> &PathConfig {
         &self.config
     }
@@ -203,6 +223,10 @@ impl CrossPath {
     /// - Path traversal detection
     /// - Dangerous pattern detection
     /// - System directory access check
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if security check fails
     pub fn is_safe(&self) -> PathResult<bool> {
         security::PathSecurityChecker::check_path_security(&self.inner)
     }
@@ -210,6 +234,10 @@ impl CrossPath {
     /// Normalize path
     ///
     /// Removes redundant components like `.` and `..`
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if normalization fails
     pub fn normalize(&mut self) -> PathResult<()> {
         let normalized = PathParser::normalize_path(&self.inner)?;
         self.inner = normalized;
@@ -242,12 +270,24 @@ impl From<PathBuf> for CrossPath {
 /// Extension trait to add conversion methods to string and path types
 pub trait PathConvert {
     /// Convert to `CrossPath`
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if conversion fails
     fn to_cross_path(&self) -> PathResult<CrossPath>;
 
     /// Convert to Windows path
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if conversion fails
     fn to_windows_path(&self) -> PathResult<String>;
 
     /// Convert to Unix path
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if conversion fails
     fn to_unix_path(&self) -> PathResult<String>;
 }
 

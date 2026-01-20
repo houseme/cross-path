@@ -32,18 +32,26 @@ impl Default for PathSecurityChecker {
 
 impl PathSecurityChecker {
     /// Create new security checker
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Check path security (static method)
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if the path is considered unsafe.
     pub fn check_path_security(path: &Path) -> PathResult<bool> {
         let checker = Self::new();
         checker.check(path)
     }
 
     /// Perform security checks on path
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathError` if the path violates any security rules.
     pub fn check(&self, path: &Path) -> PathResult<bool> {
         // Check for path traversal attacks
         if self.detect_path_traversal(path) {
@@ -180,7 +188,7 @@ impl PathSecurityChecker {
     }
 
     /// Sanitize path by removing dangerous characters
-    #[must_use] 
+    #[must_use]
     pub fn sanitize_path(path: &str) -> String {
         let mut sanitized = path.to_string();
 

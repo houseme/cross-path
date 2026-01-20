@@ -175,7 +175,7 @@ pub fn from_windows_path(wide: &[u16]) -> Result<String, PathError> {
     // Convert separators
     let mut result = OsString::from_wide(slice)
         .into_string()
-        .map_err(|e| PathError::encoding_error(e.to_string()))?;
+        .map_err(|e| PathError::encoding_error(e.to_string_lossy().into_owned()))?;
 
     // Unify separator display
     result = result.replace('\\', "/");

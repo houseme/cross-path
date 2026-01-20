@@ -119,13 +119,16 @@ impl PathConverter {
         }
 
         // Handle regular Unix paths
+        #[cfg(not(target_os = "windows"))]
         if normalized.starts_with("/mnt/")
-            && let Some((drive, rest)) = super::platform::unix::parse_unix_mount_point(&normalized)
+            && let Some((drive, rest)) = crate::platform::unix::parse_unix_mount_point(&normalized)
         {
+            let drive_str: String = drive.to_ascii_uppercase().clone();
+            let rest_str: String = rest.replace('/', "\\");
             return format!(
                 "{}:{}{}",
-                drive.to_ascii_uppercase(),
-                rest.replace('/', "\\"),
+                drive_str,
+                rest_str,
                 if rest.is_empty() { "\\" } else { "" }
             );
         }

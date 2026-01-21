@@ -193,6 +193,61 @@ pub fn get_filesystem_stats(path: &Path) -> Result<FilesystemStats, PathError> {
         }
     }
 
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    #[allow(clippy::unnecessary_cast)]
+    {
+        Ok(FilesystemStats {
+            block_size: statfs.f_bsize,
+            total_blocks: statfs.f_blocks as u64,
+            free_blocks: statfs.f_bfree as u64,
+            available_blocks: statfs.f_bavail as u64,
+            total_inodes: statfs.f_files as u64,
+            free_inodes: statfs.f_ffree as u64,
+            filesystem_id: statfs.f_fsid,
+            mount_flags: statfs.f_flag,
+            max_filename_length: statfs.f_namemax,
+        })
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    {
+        Ok(FilesystemStats {
+            block_size: statfs.f_bsize,
+            total_blocks: statfs.f_blocks,
+            free_blocks: statfs.f_bfree,
+            available_blocks: statfs.f_bavail,
+            total_inodes: statfs.f_files,
+            free_inodes: statfs.f_ffree,
+            filesystem_id: statfs.f_fsid,
+            mount_flags: statfs.f_flag,
+            max_filename_length: statfs.f_namemax,
+        })
+    }
+
+    #[cfg(any(target_os = "freebsd", target_os = "openbsd", target_os = "netbsd"))]
+    {
+        Ok(FilesystemStats {
+            block_size: statfs.f_bsize,
+            total_blocks: statfs.f_blocks,
+            free_blocks: statfs.f_bfree,
+            available_blocks: statfs.f_bavail,
+            total_inodes: statfs.f_files,
+            free_inodes: statfs.f_ffree,
+            filesystem_id: statfs.f_fsid,
+            mount_flags: statfs.f_flag,
+            max_filename_length: statfs.f_namemax,
+        })
+    }
+
+    #[cfg(not(any(
+        target_os = "macos",
+        target_os = "ios",
+        target_os = "linux",
+        target_os = "android",
+        target_os = "freebsd",
+        target_os = "openbsd",
+        target_os = "netbsd"
+    )))]
     #[allow(clippy::unnecessary_cast)]
     {
         Ok(FilesystemStats {

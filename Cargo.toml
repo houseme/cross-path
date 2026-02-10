@@ -26,7 +26,7 @@ unicode = ["dep:encoding_rs"]
 security = []
 
 [dev-dependencies]
-tempfile = { version = "3.24" }
+tempfile = { version = "3.25" }
 
 [package.metadata.docs.rs]
 all-features = true
